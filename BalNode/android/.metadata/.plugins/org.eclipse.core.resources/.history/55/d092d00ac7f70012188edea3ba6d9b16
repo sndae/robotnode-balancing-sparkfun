@@ -1,0 +1,51 @@
+package com.xmerx.balnode;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Set;
+import java.util.UUID;
+
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothSocket;
+
+public class BTComm {
+	// Persistent bluetooth objects
+	private BluetoothSocket btSocket = null;
+	private OutputStream outStream = null;
+	private InputStream inStream = null;
+	// Android Bluetooth SPP UUID
+	private static final UUID ANDROID_BT_UUID =
+      UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
+	
+	
+	// Constructor will
+	public BTComm() {
+		BluetoothAdapter btAdapter = BluetoothAdapter.getDefaultAdapter();
+		BluetoothDevice myDevice = null;
+		
+		// User should already have paired with bluetooth device. Iterate through the list and
+		// grab the device by name.
+		Set<BluetoothDevice> pairedDevices = btAdapter.getBondedDevices();
+        if (pairedDevices.size() > 0) {
+            for (BluetoothDevice device : pairedDevices) {
+                if (device.getName().equals("linvor")) {
+                    myDevice = device;
+                    break;
+                }
+            }
+        }
+        
+        try {
+			btSocket = myDevice.createRfcommSocketToServiceRecord(ANDROID_BT_UUID);
+			btSocket.connect();
+			outStream = btSocket.getOutputStream();
+		} 
+        catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+}
