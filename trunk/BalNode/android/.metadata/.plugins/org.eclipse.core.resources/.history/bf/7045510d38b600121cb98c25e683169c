@@ -1,0 +1,77 @@
+package com.xmerx.balnodebottest;
+
+import com.hoho.android.usbserial.util.SerialInputOutputManager;
+import android.os.SystemClock;
+
+public class BalanceTask {
+	
+	private static final double[] K = {-14.1421, -11.1145, 104.2777, 12.3453};
+	private static final double Nbar = -14.1421;
+	private static final double VoltsToCountsPerSec = 12.0/10667;
+	
+	private static final long MainLoopTimeMs = 10000, ReadSpeedTimeMs = 10;
+	
+	private static Thread mainThread;
+	private static boolean runThread = false;
+	private static HandlerSensors sensorHandler;
+	private static SerialInputOutputManager serialIoManager;
+	
+	private double mv1 = 0.0, mv2 = 0.0, x = 0.0, v = 0.0;
+	private boolean motorSpeedsUpdated = false;
+	
+	public BalanceTask(HandlerSensors hs, SerialInputOutputManager sIoM) {
+		sensorHandler = hs;
+		serialIoManager = sIoM;
+		
+		mainThread = new Thread() {
+			@Override
+			public void run()
+			{
+				long controlTime = SystemClock.uptimeMillis();
+				
+				while (runThread) {
+					updateMotorSpeeds();
+					long loopTime = SystemClock.uptimeMillis();
+					
+					// update state variables (pitch angle and rate handled by sensorHandler)
+					long dt = loopTime - controlTime;
+					v = Math.sqrt(mv1*mv1 + mv2*mv2);
+					x += v*dt;
+					
+					// calculate control
+					double Va = K[0]*x + K[1]*v + K[2]*sensorHandler.pitchAngle + K[3]*sensorHandler.pitchRate;
+					int spd = (int)(Va*VoltsToCountsPerSec);
+					// send command
+					
+					
+					// reset control time to wait for next update
+					controlTime = loopTime;
+					
+					// calc remaining time before next update
+					long remTime = SystemClock.uptimeMillis() - MainLoopTimeMs;
+					// sleep if we can
+					if (remTime > ReadSpeedTimeMs) {
+						try {
+							Thread.sleep(remTime - ReadSpeedTimeMs);
+						}
+						catch (Exception e) {
+							// whoops
+						}	
+					}
+					
+				}
+			}
+		};
+		mainThread.setDaemon(true);
+		mainThread.start();
+	}
+	
+	private void updateMotorSpeeds()
+	{
+		// kick off a read by the arduino
+		// wait up to ReadSpeedTimeMs for a response before retrying
+		// return once speeds have been read
+		motorSpeedsUpdated = false;
+	}
+
+}

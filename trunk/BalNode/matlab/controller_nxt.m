@@ -1,0 +1,100 @@
+
+% BalNode model
+% used to calculate controller parameters
+clc;
+
+% gravity
+g = 9.81; % m/s^2 
+
+% mass of the pendulum (robot - wheels)
+Mp = 1.17934; % kg (approx scale diff to me 2.6lbs)
+% distance from wheel axle to center of mass
+L = 0.1016; % m (half length from axle to top) [approx 4 inches]
+% pendulum moment of inertia
+Ip = Mp*L*L/3;
+
+% mass of a wheel
+Mw = 0.3; % kg (guestimate based on size diff to lego rcx wheel)
+% wheel radius
+wR = 0.1524/2; % m (6 inch diameter)
+% wheel moment of inertia
+Iw = Mw*wR*wR/2;
+
+% motor stall torque and current
+%Tm = 1.2004638116661; % 170oz*in to N*m
+%Im = 5; % A
+% motor torque constant
+%km = Tm/Im;
+km = 0.317;
+% motor nominal voltage and rpm
+%Vm = 12; % V
+%Wm = 20.943951; % 200 rpm to rad/s
+% motor back emf constant
+%ke = Vm/Wm;
+ke = 0.468;
+% motor resistance
+%Rm = Vm/Im; % approximate using nominal voltage and stall current
+Rm = 6.69;
+
+% system equations Ax + Bu
+beta = 2*Mw + ((2*Iw)/(wR*wR)) + Mp;
+alpha = Ip*beta + 2*Mp*L*L*(Mw + (Iw/(wR*wR)));
+a22 = (2*km*ke*(Mp*L*wR - Ip - Mp*L*L))/(Rm*wR*alpha);
+a23 = (Mp*Mp*g*L*L)/alpha;
+a42 = (2*km*ke*(wR*beta - Mp*L))/(Rm*wR*alpha);
+a43 = (Mp*g*L*beta)/alpha;
+
+A = [0  1   0  0;
+     0 a22 a23 0;
+     0  0   0  1;
+     0 a42 a43 0];
+ 
+ b2 = (2*km*(Ip + Mp*L*L - Mp*L*wR))/(Rm*wR*alpha);
+ b4 = (2*km*(Mp*L - wR*beta))/(Rm*wR*alpha);
+ 
+ B = [0; b2; 0; b4];
+ 
+% Q and R for lqr controller
+Q = [100 0 0 0;
+     0 1 0 0;
+     0 0 1 0;
+     0 0 0 1000];
+ R = 1;
+
+% calculate K and validate step response
+K = lqr(A, B, Q, R) 
+
+
+Ac = A - B*K;
+Bc = B;
+Cc = [1 0 0 0;
+      0 0 1 0];
+Dc = [0; 0];
+
+Cn = [1 0 0 0];
+sys_ss = ss(A,B,Cn,0);
+Nbar = rscale(sys_ss,K)
+%Nbar = 1;
+
+states = {'x' 'x_dot' 'phi' 'phi_dot'};
+inputs = {'r'};
+outputs = {'x'; 'phi'};
+
+sys_cl = ss(Ac,Bc*Nbar,Cc,Dc,'statename',states,'inputname',inputs,'outputname',outputs);
+
+delete(figure(1));
+figure(1);
+
+t = 0:0.02:5;
+r = .5*ones(size(t));
+[y,t,x]=lsim(sys_cl,r,t);
+[AX,H1,H2] = plotyy(t,y(:,1),t,y(:,2),'plot');
+set(get(AX(1),'Ylabel'),'String','robot position (m)')
+set(get(AX(2),'Ylabel'),'String','pitch angle (radians)')
+title(['Step Response with LQR Control, Max Control Effort: ' ...
+    num2str(max(abs(x*K'))) 'V'])
+
+% controller notes
+% Have PID control over wheel speed with RoboClaw controller. However, may
+% need to compensate for battery voltage by adjusting P gain.
+% We should simulate then implement kalman filter for pitch angle and rate
