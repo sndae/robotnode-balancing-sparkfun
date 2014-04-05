@@ -1,1 +1,0 @@
-INDEX VERSION 1.126+C:\tools\BalNode\android\.metadata\.plugins\org.eclipse.jdt.core
