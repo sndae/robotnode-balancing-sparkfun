@@ -7,8 +7,7 @@ import android.hardware.SensorManager;
 import android.widget.TextView;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
-
-import com.xmerx.balnodetest.R;
+import com.xmerx.balnode.R;
 
 
 public class MainActivity extends Activity
@@ -68,6 +67,13 @@ public class MainActivity extends Activity
 		// create btcomm object
 		btComm = new BTComm();
 		
+		// wait a second then end calibration
+		try {
+			Thread.sleep(1000);
+		} 
+		catch (InterruptedException e) {}
+		
+		hRotate.calibrate();
 		// create balance task object
 		balTask = new BalanceTask2(hRotate, btComm, mCallBack);
 		
@@ -95,8 +101,8 @@ public class MainActivity extends Activity
     	if (balTask != null) {
     		// this is started as a runnable on the main thread so it is possible that balTask
     		// is null by the time the UI get's to executing here.
-    		String message = balTask.mv1 + " " + balTask.mv2 + " " + val + "\r\n";
-        	tvTerm.append(message);
+    		String message = balTask.mv1 + " " + balTask.mv2 + " " + val;
+        	tvTerm.setText(message);
     	}
         //mScrollView.smoothScrollTo(0, mDumpTextView.getBottom());
     }

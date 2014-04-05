@@ -1,8 +1,6 @@
 package com.xmerx.balnodebottest;
 
-import com.hoho.android.usbserial.util.SerialInputOutputManager;
 import android.os.SystemClock;
-import com.hoho.android.usbserial.driver.UsbSerialDriver;
 import com.xmerx.balnodebottest.MainActivity;
 import java.io.UnsupportedEncodingException;
 import java.io.IOException;

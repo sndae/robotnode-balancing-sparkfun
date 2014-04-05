@@ -18,8 +18,15 @@ public class SensorHandler implements SensorEventListener
 	private TextView gtvY;
 	private TextView gtvZ;
 	
+	private static final double GRAVITY = 9.81;
+	private static final double HALF_PI = 1.570796326794897;
+	
 	public double pitchAngle = 0.0, pitchRate = 0.0;
+	private double sum = 0, offset = 0;
+	private int count = 0;
+	
 	public boolean isRunning = false;
+	private boolean calibrate = true;
 	
 	public SensorHandler(SensorManager sm, TextView atvX, TextView atvY, TextView atvZ,
 			TextView gtvX, TextView gtvY, TextView gtvZ)
@@ -68,12 +75,36 @@ public class SensorHandler implements SensorEventListener
 			atvX.setText(Float.toString(x));
 			atvY.setText(Float.toString(y));
 			atvZ.setText(Float.toString(z));
+			
+			// calculate the pitch angle based on the z axis
+			if (Math.abs(x) > GRAVITY) {
+				// just in case the sensor reports a value greater than gravity clip the angle 
+				pitchAngle = (x > 0) ? HALF_PI: -1*HALF_PI;
+			}
+			else {
+				pitchAngle = Math.asin(x/GRAVITY);
+			}
 		}
 		else {
 			gtvX.setText(Float.toString(x));
 			gtvY.setText(Float.toString(y));
 			gtvZ.setText(Float.toString(z));
+			
+			pitchRate = x - offset;
+			
+			if (calibrate) {
+				sum += x;
+				count++;
+			}
+			else {
+				offset = sum / count;
+			}
 		}
 	}
 
+	public void calibrate() {
+		if (calibrate) {
+			calibrate = true;
+		}
+	}
 }

@@ -1,19 +1,19 @@
 package com.xmerx.balnodebottest;
 
+
+import com.physicaloid.lib.Physicaloid;
+
 import android.os.Bundle;
 import android.app.Activity;
 import android.app.PendingIntent;
 import android.view.Menu;
 import android.hardware.SensorManager;
 import android.widget.TextView;
-
 import android.content.Context;
 import android.content.Intent;
 import android.hardware.usb.UsbManager;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
-
-import com.xmerx.balnodetest.R;
 
 
 public class MainActivity extends Activity
@@ -22,9 +22,10 @@ public class MainActivity extends Activity
 	private SensorManager mSensorManager;
 	private SensorHandler hRotate;
 	private UsbManager mUsbManager;
-	private FTDriver mSerialDevice;
+	//private FTDriver mSerialDevice;
+	private Physicaloid mSerialDevice;
 	private TextView tvTerm;
-	private BalanceTask2 balTask;
+	private BalanceTask3 balTask;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,7 +57,7 @@ public class MainActivity extends Activity
     
     public double val;
 
-    private final BalanceTask2.CallBack mCallBack = new BalanceTask2.CallBack() {
+    private final BalanceTask3.CallBack mCallBack = new BalanceTask3.CallBack() {
 		@Override
 		public void update(double val) {
 			MainActivity.this.val = val;
@@ -77,12 +78,13 @@ public class MainActivity extends Activity
     	hRotate.start();
     	
     	// bring the serial device back online
-    	mSerialDevice = new FTDriver(mUsbManager);
+    	//mSerialDevice = new FTDriver(mUsbManager);
+    	mSerialDevice = new Physicaloid(this);
     	
     	// [FTDriver] setPermissionIntent before begin
-    	PendingIntent permissionIntent = PendingIntent.getBroadcast(this, 0, new Intent(
-                "USB Permission"), 0);
-        mSerialDevice.setPermissionIntent(permissionIntent);
+    	//PendingIntent permissionIntent = PendingIntent.getBroadcast(this, 0, new Intent(
+        //        "USB Permission"), 0);
+        //mSerialDevice.setPermissionIntent(permissionIntent);
 
         Log.d(TAG, "Resumed, mSerialDevice=" + mSerialDevice);
         if (mSerialDevice == null) {
@@ -90,10 +92,12 @@ public class MainActivity extends Activity
             tvTerm.append("No Serial Device Found\n");
         } 
         else {
-            if (mSerialDevice.begin(FTDriver.BAUD38400)) {
+            //if (mSerialDevice.begin(FTDriver.BAUD38400)) {
+        	if (mSerialDevice.open()) {
+        		
             	Log.d(TAG, "Started serial.");
             	// successfully opened serial connection, resume balance task
-            	balTask = new BalanceTask2(hRotate, mSerialDevice, mCallBack);
+            	balTask = new BalanceTask3(hRotate, mSerialDevice, mCallBack);
             }
             else {
             	tvTerm.append("Unable to Connect to Serial\n");
@@ -116,7 +120,8 @@ public class MainActivity extends Activity
  
     	// shut down serial device
         if (mSerialDevice != null) {
-            mSerialDevice.end();
+        //    mSerialDevice.end();
+        	mSerialDevice.close();
             mSerialDevice = null;
         }
     }
