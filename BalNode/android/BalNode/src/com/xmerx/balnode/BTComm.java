@@ -51,6 +51,7 @@ public class BTComm {
 	public void Write(String strToWrite) {
 		try {
 			outStream.write(strToWrite.getBytes());
+			outStream.flush();
 		}
 		catch (IOException e) {}
 	}
@@ -101,6 +102,7 @@ public class BTComm {
 	}
 	
 	public String WriteThenRead(String strToWrite, long timeoutMs) {
+		flush();
 		Write(strToWrite);
 		return Read(timeoutMs);
 	}
@@ -114,5 +116,15 @@ public class BTComm {
 		
 		outStream = null;
 		inStream = null;
+	}
+	
+	private void flush() {
+		try {
+			int len = inStream.available();
+			for (int i = 0; i < len; i++) {
+				inStream.read();
+			}
+		}
+		catch (IOException e){}
 	}
 }
