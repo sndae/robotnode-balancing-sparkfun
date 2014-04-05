@@ -25,8 +25,12 @@ void setup()
     
     pinMode(ledPin, OUTPUT);
     
-    // open up serial port to phone (via BT adapter)
-    Serial.begin(9600);
+    // open up serial port to phone (via BT adapter or USB)
+    Serial.begin(38400);
+    // 1ms should be more than enough for any data that is
+    // being streamed to us
+    Serial.setTimeout(1);
+    
     // open up software serial port to RoboClaw
     roboClaw.begin(38400);
     // turn off motors
@@ -63,7 +67,7 @@ void loop()
                 // user is writing motor speeds
                 ReadUserSpeed();
                 // send command to RoboClaw
-                roboClaw.SpeedM1M2(rcAddress, m1Speed, m2Speed);
+                //roboClaw.SpeedM1M2(rcAddress, m1Speed, m2Speed);
             }
         }
         digitalWrite(ledPin, HIGH);
@@ -72,7 +76,7 @@ void loop()
 
 
 // command structure is as such:
-// \n:xxx yyy\n
+// \n:W xxx yyy\n
 // where : signals the start of a new command
 // xxx is M1 speed, yyy is M2 speed
 // \n is sent before command just in case we missed the last one
@@ -108,7 +112,7 @@ void GetClawSpeed()
     }
   
     // Send results to user
-    Serial.print(":R");
+    Serial.print(":R ");
     Serial.print(m1Speed);
     Serial.print(" ");
     Serial.println(m2Speed);
