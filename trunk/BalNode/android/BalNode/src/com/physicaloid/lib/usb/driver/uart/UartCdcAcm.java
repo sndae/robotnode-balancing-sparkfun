@@ -94,7 +94,7 @@ public class UartCdcAcm extends SerialCommunicator{
     }
     
     //ICU for async read
-    byte[] rbuf = new byte[USB_READ_BUFFER_SIZE];
+    private static byte[] rbuf = new byte[USB_READ_BUFFER_SIZE];
 
     @Override
     public int read(byte[] buf, int size) {

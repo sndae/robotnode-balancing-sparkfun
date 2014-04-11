@@ -7,11 +7,24 @@ import android.util.Log;
 
 
 public class BalanceTask {
-	
+	// Controller Parameters
 	private static final double[] K = {-14.1421, -11.1145, 104.2777, 12.3453};
+	
+	// 12V results in 200RPM. At 3200 counts per sec, comes out to 10667 counts per sec at 12V
 	private static final double VoltsToCountsPerSec = 12.0/10667;
+	// 6 inches = 0.1524m. Wheel circumference (distance traveled per rev is PI*d = 0.1524*PI).
+	// Encoder does 3200 counts per wheel revolution
+	private static final double MetersPerCount = (0.1524 * Math.PI) / 3200;
+	
+	
+	// Robot Parameters
+	private static final double WheelBase = 0.15;
+	
+	
 	// Balance loop runs at 50Hz (every 20ms)
 	private static final long MainLoopTimeMs = 50;
+	// Read seems to require about 10ms between sending the read command and when data is ready
+	private static final long ReadWaitMs = 10;
 	
 	private static Thread balThread;
 	private static Thread readThread;
@@ -24,7 +37,7 @@ public class BalanceTask {
 	
 	private static int errors = 0;
 	
-	public double mv1 = 0.0, mv2 = 0.0, x = 0.0, v = 0.0;
+	public double mvL = 0.0, mvR = 0.0, x = 0.0;
 	
 	public interface CallBack {
 		public void update(double val);
@@ -99,13 +112,26 @@ public class BalanceTask {
 			long dt = now - lastTime;
 			lastTime = now;
 			
-			// speed needs to be in units of ?
-			// convert from
-			v = Math.sqrt(mv1*mv1 + mv2*mv2);
-			x += v*dt;
+			// Convert speed from counts/sec to units of m/s
+			mvL *= MetersPerCount;    // left speed
+			mvR *= -1*MetersPerCount; // right speed (driven with opposite sign)
 			
+			// Calculate incremental dx and dy and incremental vx and vy
+			double alpha = (1/2)*(mvR + mvL);
+			double beta = (alpha*WheelBase)/(mvR - mvL);
+			double gamma = (mvR - mvL)*(dt/WheelBase);
+			double dx = beta*Math.sin(gamma);
+			double dy = -1*beta*Math.cos(gamma);
+			double vx = alpha*Math.cos(gamma);
+		    double vy = alpha*Math.sin(gamma);
+			
+		    // Calculate x and v, the resultant of the incremental movement
+			double sign = dx > 0 ? 1 : -1;
+			double stateX = sign*Math.sqrt((dx*dx) + (dy*dy));
+			double stateXdot = sign*Math.sqrt((vx*vx) + (vy*vy));
+		    
 			// Calculate control
-			double Va = K[0]*x + K[1]*v + K[2]*sensorHandler.pitchAngle + K[3]*sensorHandler.pitchRate;
+			double Va = K[0]*stateX + K[1]*stateXdot + K[2]*sensorHandler.pitchAngle + K[3]*sensorHandler.pitchRate;
 			// Convert into a speed command for the RoboClaw
 			int spd = (int)(Va*VoltsToCountsPerSec);
 			
@@ -113,10 +139,10 @@ public class BalanceTask {
 			cmd = "\n:W" + -1*spd + " " + spd + "\n";
 			cmd = "\n:W 1000 -1000\n";
 			long s = SystemClock.uptimeMillis();
-			//arduino.write(cmd.getBytes());
+			arduino.write(cmd.getBytes());
 			s = SystemClock.uptimeMillis() - s;
 			
-			if (count == 25) {
+			if (count == 10) {
 				count = 0;
 				mCallBack.update(errors);
 				errors = 0;
@@ -139,7 +165,6 @@ public class BalanceTask {
 	private void doRead() {
 		byte[] rbuf = new byte[64];
 		int numBytes = 0;
-		int test = 10;
 		runReadTask = true;
 		
 		// signal balance task it can begin
@@ -166,7 +191,7 @@ public class BalanceTask {
 			arduino.write(":R\n".getBytes());
 			// Wait a couple ms for response
 			try {
-				Thread.sleep(test);
+				Thread.sleep(ReadWaitMs);
 			} 
 			catch (InterruptedException e){}
 			
@@ -219,8 +244,8 @@ public class BalanceTask {
 						try {
 							double m1 = Double.parseDouble(speeds[0]);
 							double m2 = Double.parseDouble(speeds[1]);
-							mv1 = m1;
-							mv2 = m2;
+							mvL = m1;
+							mvR = m2;
 						}
 						catch (NumberFormatException e){}
 					}
