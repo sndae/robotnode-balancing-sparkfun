@@ -29,7 +29,7 @@ void setup()
     Serial.begin(38400);
     // 1ms should be more than enough for any data that is
     // being streamed to us
-    Serial.setTimeout(1);
+    //Serial.setTimeout(1);
     
     // open up software serial port to RoboClaw
     roboClaw.begin(38400);
@@ -54,7 +54,7 @@ void loop()
     
     // check for user commands
     if (Serial.available() > 1) { // we have at least two characters
-        digitalWrite(ledPin, LOW);
+        digitalWrite(ledPin, HIGH);
         if (Serial.read() == ':') {
             cmd = (char)Serial.read();
             if (cmd == 'R') {
@@ -67,10 +67,10 @@ void loop()
                 // user is writing motor speeds
                 ReadUserSpeed();
                 // send command to RoboClaw
-                //roboClaw.SpeedM1M2(rcAddress, m1Speed, m2Speed);
+                roboClaw.SpeedM1M2(rcAddress, m1Speed, m2Speed);
             }
         }
-        digitalWrite(ledPin, HIGH);
+        digitalWrite(ledPin, LOW);
     }
 }
 
@@ -89,6 +89,11 @@ void ReadUserSpeed()
     m2Speed = Serial.parseInt();
     // read until terminating character
     while (Serial.read() != '\n');
+    
+   Serial.print("Got speeds ");
+   Serial.print(m1Speed);
+   Serial.print(" and ");
+   Serial.println(m2Speed);
 }
 
 void GetClawSpeed()
