@@ -119,7 +119,7 @@ public class MainActivity extends Activity
     	if (balTask != null) {
     		// this is started as a runnabled on the main thread so it is possible that balTask
     		// is null by the time the ui get's to executing here.
-    		String message = balTask.mv1 + " " + balTask.mv2 + " " + val + "\r\n";
+    		String message = balTask.mvL + " " + balTask.mvR + " " + val + "\r\n";
         	tvTerm.append(message);
     	}
         //mScrollView.smoothScrollTo(0, mDumpTextView.getBottom());
