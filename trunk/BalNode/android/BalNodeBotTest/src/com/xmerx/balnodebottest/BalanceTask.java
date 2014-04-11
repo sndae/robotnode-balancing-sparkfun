@@ -10,8 +10,8 @@ public class BalanceTask {
 	
 	private static final double[] K = {-14.1421, -11.1145, 104.2777, 12.3453};
 	private static final double VoltsToCountsPerSec = 12.0/10667;
-	// Balance loop runs at 20Hz (every 50ms)
-	private static final long MainLoopTimeMs = 500;
+	// Balance loop runs at 50Hz (every 20ms)
+	private static final long MainLoopTimeMs = 50;
 	
 	private static Thread balThread;
 	private static Thread readThread;
@@ -113,7 +113,7 @@ public class BalanceTask {
 			cmd = "\n:W" + -1*spd + " " + spd + "\n";
 			cmd = "\n:W 1000 -1000\n";
 			long s = SystemClock.uptimeMillis();
-			arduino.write(cmd.getBytes());
+			//arduino.write(cmd.getBytes());
 			s = SystemClock.uptimeMillis() - s;
 			
 			if (count == 25) {
@@ -139,7 +139,7 @@ public class BalanceTask {
 	private void doRead() {
 		byte[] rbuf = new byte[64];
 		int numBytes = 0;
-		int test = 2;
+		int test = 10;
 		runReadTask = true;
 		
 		// signal balance task it can begin
@@ -197,7 +197,7 @@ public class BalanceTask {
 				
 				if (!isPacketDone) { // Still more bytes to receive, let's give them some time to arrive
 					try {
-						Thread.sleep(1);
+						Thread.sleep(2);
 					}
 					catch (InterruptedException e) {}
 				}
