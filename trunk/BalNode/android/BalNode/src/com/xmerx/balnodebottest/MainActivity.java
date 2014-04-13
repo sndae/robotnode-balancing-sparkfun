@@ -43,6 +43,18 @@ public class MainActivity extends Activity
 		// and let's get started!
 		hRotate.start();
 		
+		try {
+			Thread.sleep(500);
+		}
+		catch (InterruptedException e){}
+		hRotate.calibrate();
+		try {
+			Thread.sleep(500);
+		}
+		catch (InterruptedException e){}
+		hRotate.doneCalibrate();
+		
+		
 		// handle to terminal text view
 		tvTerm = (TextView)findViewById(R.id.term);
 		tvTerm.setMovementMethod(new ScrollingMovementMethod());
