@@ -11,7 +11,7 @@ public class BalanceTask {
 	private static final double[] K = {-14.1421, -11.1145, 104.2777, 12.3453};
 	
 	// 12V results in 200RPM. At 3200 counts per sec, comes out to 10667 counts per sec at 12V
-	private static final double VoltsToCountsPerSec = 12.0/10667;
+	private static final double VoltsToCountsPerSec = 10667/12;
 	// 6 inches = 0.1524m. Wheel circumference (distance traveled per rev is PI*d = 0.1524*PI).
 	// Encoder does 3200 counts per wheel revolution
 	private static final double MetersPerCount = (0.1524 * Math.PI) / 3200;
@@ -21,8 +21,8 @@ public class BalanceTask {
 	private static final double WheelBase = 0.15;
 	
 	
-	// Balance loop runs at 50Hz (every 20ms)
-	private static final long MainLoopTimeMs = 50;
+	// Balance loop runs at 20Hz (every 50ms)
+	private static final long MainLoopTimeMs = 30;
 	// Read seems to require about 10ms between sending the read command and when data is ready
 	private static final long ReadWaitMs = 10;
 	
@@ -89,6 +89,12 @@ public class BalanceTask {
 		
 		int count = 0;
 		
+		// PID parameters
+		double theta = 0.0;
+		double P = -40000.0;
+		double I = -50.0;
+		double D = 6000.0;
+		
 		// Balance task loop
 		while (runBalTask) {
 			long controlTime = SystemClock.uptimeMillis();
@@ -127,22 +133,31 @@ public class BalanceTask {
 			
 		    // Calculate x and v, the resultant of the incremental movement
 			double sign = dx > 0 ? 1 : -1;
-			double stateX = sign*Math.sqrt((dx*dx) + (dy*dy));
-			double stateXdot = sign*Math.sqrt((vx*vx) + (vy*vy));
+			//double stateXdot = (mvL + mvR)/2;
+			//stateX = stateXdot*dt;
 		    
 			// Calculate control
-			double Va = K[0]*stateX + K[1]*stateXdot + K[2]*sensorHandler.pitchAngle + K[3]*sensorHandler.pitchRate;
+			//double Va = K[0]*stateX + K[1]*stateXdot + K[2]*sensorHandler.pitchAngle + K[3]*sensorHandler.pitchRate;
+			
+			
 			// Convert into a speed command for the RoboClaw
-			int spd = (int)(Va*VoltsToCountsPerSec);
+			//int spd = (int)(Va*VoltsToCountsPerSec);
+			// TODO: Create a PID class (under controller package)
+			int spd = (int)(P*sensorHandler.pitchAngle + I*theta + D*sensorHandler.pitchRate);
+			int spdR = spd;
+			int spdL = -1*spd;
+			theta += sensorHandler.pitchAngle;
+			
 			
 			// Send speed command
-			cmd = "\n:W" + -1*spd + " " + spd + "\n";
-			cmd = "\n:W 1000 -1000\n";
+			int check = spdR - spdL + 99;
+			cmd = "\n:W" + spdR + " " + spdL + " " + check + "\n";
+			
 			long s = SystemClock.uptimeMillis();
 			arduino.write(cmd.getBytes());
 			s = SystemClock.uptimeMillis() - s;
 			
-			if (count == 10) {
+			if (count == 33) {
 				count = 0;
 				mCallBack.update(errors);
 				errors = 0;
