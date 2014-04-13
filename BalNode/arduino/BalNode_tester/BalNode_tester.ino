@@ -65,9 +65,10 @@ void loop()
             }
             else if (cmd == 'W') {
                 // user is writing motor speeds
-                ReadUserSpeed();
-                // send command to RoboClaw
-                roboClaw.SpeedM1M2(rcAddress, m1Speed, m2Speed);
+                if (ReadUserSpeed()) {
+                    // send command to RoboClaw
+                    roboClaw.SpeedM1M2(rcAddress, m1Speed, m2Speed);
+                }
             }
         }
         digitalWrite(ledPin, LOW);
@@ -80,20 +81,24 @@ void loop()
 // where : signals the start of a new command
 // xxx is M1 speed, yyy is M2 speed
 // \n is sent before command just in case we missed the last one
-void ReadUserSpeed()
+boolean ReadUserSpeed()
 {
+    // read the space
     Serial.read();
+    // right motor speed
     m1Speed = Serial.parseInt();
-    // read the separator
+    // read the next space
     Serial.read();
+    // left motor speed
     m2Speed = Serial.parseInt();
+    // read the final space
+    Serial.read();
+    // checksum
+    int check = Serial.parseInt();
     // read until terminating character
     while (Serial.read() != '\n');
     
-   Serial.print("Got speeds ");
-   Serial.print(m1Speed);
-   Serial.print(" and ");
-   Serial.println(m2Speed);
+   return (check == (m1Speed - m2Speed + 99));
 }
 
 void GetClawSpeed()
