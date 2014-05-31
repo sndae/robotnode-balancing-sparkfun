@@ -2,7 +2,7 @@
 #include <RoboClaw.h>
 
 #define rcAddress 0x80 // RoboClaw address
-#define Kp 0x00010000
+#define Kp 0x02000000
 #define Ki 0x00008000
 #define Kd 0x00004000
 #define qpps 12000 // nominal motor speed is 10667 counts per second
