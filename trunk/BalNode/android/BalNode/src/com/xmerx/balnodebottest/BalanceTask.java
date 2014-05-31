@@ -2,6 +2,8 @@ package com.xmerx.balnodebottest;
 
 import com.physicaloid.lib.Physicaloid;
 
+import android.media.AudioManager;
+import android.media.ToneGenerator;
 import android.os.SystemClock;
 import android.util.Log;
 
@@ -78,6 +80,16 @@ public class BalanceTask {
 		long lastTime = SystemClock.uptimeMillis();
 		String cmd;
 		
+		// 2 second start delay for user to hold robot steady
+		arduino.write("\n:W 0 0 99 \n".getBytes());
+		try {
+			Thread.sleep(2000);
+		}
+		catch (InterruptedException e) {}
+		
+		ToneGenerator toneG = new ToneGenerator(AudioManager.STREAM_ALARM, 100);
+		toneG.startTone(ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD, 200); 
+		
 		// Wait for read task to complete setup
 		Log.d("bal", "Waiting for read Task");
 		while(!isReadTaskReady) {
@@ -90,10 +102,12 @@ public class BalanceTask {
 		int count = 0;
 		
 		// PID parameters
-		double theta = 0.0;
-		double P = -40000.0;
-		double I = -50.0;
-		double D = 6000.0;
+		double err = 0.0;
+		double errD = 0.0;
+		double errS = 0.0;
+		double P = -35000.0;
+		double I = 0.0;
+		double D = 500.0;
 		
 		// Balance task loop
 		while (runBalTask) {
@@ -115,7 +129,7 @@ public class BalanceTask {
 			
 			// Update state variables (pitch angle and rate handled by sensorHandler)
 			long now = SystemClock.uptimeMillis();
-			long dt = now - lastTime;
+			double dt = (now - lastTime)/1000.0;
 			lastTime = now;
 			
 			// Convert speed from counts/sec to units of m/s
@@ -142,11 +156,14 @@ public class BalanceTask {
 			
 			// Convert into a speed command for the RoboClaw
 			//int spd = (int)(Va*VoltsToCountsPerSec);
+			
 			// TODO: Create a PID class (under controller package)
-			int spd = (int)(P*sensorHandler.pitchAngle + I*theta + D*sensorHandler.pitchRate);
+			int spd = (int)(P*sensorHandler.pitchAngle + I*errS + D*sensorHandler.pitchRate*dt);
+			err = 0.75*sensorHandler.pitchAngle + 0.25*sensorHandler.pitchRate*dt;
+			
 			int spdR = spd;
 			int spdL = -1*spd;
-			theta += sensorHandler.pitchAngle;
+			errS += sensorHandler.pitchAngle;
 			
 			
 			// Send speed command

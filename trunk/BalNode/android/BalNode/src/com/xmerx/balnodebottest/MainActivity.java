@@ -40,20 +40,6 @@ public class MainActivity extends Activity
 		
 		// create our sensor handler
 		hRotate = new SensorHandler(mSensorManager, atvX, atvY, atvZ, gtvX, gtvY, gtvZ);
-		// and let's get started!
-		hRotate.start();
-		
-		try {
-			Thread.sleep(500);
-		}
-		catch (InterruptedException e){}
-		hRotate.calibrate();
-		try {
-			Thread.sleep(500);
-		}
-		catch (InterruptedException e){}
-		hRotate.doneCalibrate();
-		
 		
 		// handle to terminal text view
 		tvTerm = (TextView)findViewById(R.id.term);
@@ -81,6 +67,7 @@ public class MainActivity extends Activity
     	tvTerm.append("Resume\n");
     	// resume listening to rotation events
     	hRotate.start();
+		hRotate.calibrate();
     	
     	// bring the serial device back online
     	mSerialDevice = new Physicaloid(this);
@@ -131,8 +118,7 @@ public class MainActivity extends Activity
     	if (balTask != null) {
     		// this is started as a runnabled on the main thread so it is possible that balTask
     		// is null by the time the ui get's to executing here.
-    		String message = balTask.mvL + " " + balTask.mvR + " " + val + "\r\n";
-        	tvTerm.append(message);
+        	tvTerm.setText("" + val);
     	}
         //mScrollView.smoothScrollTo(0, mDumpTextView.getBottom());
     }
