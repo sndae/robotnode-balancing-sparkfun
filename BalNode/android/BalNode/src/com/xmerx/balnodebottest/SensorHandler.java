@@ -73,7 +73,7 @@ public class SensorHandler implements SensorEventListener
 		
 		// update views with sensor values
 		if (event.sensor.getType() == Sensor.TYPE_GRAVITY) {
-			atvX.setText(Float.toString(x));
+			atvX.setText(Float.toString((float) (x - angleOffset)));
 			atvY.setText(Float.toString(y));
 			atvZ.setText(Float.toString(z));
 			
@@ -91,12 +91,14 @@ public class SensorHandler implements SensorEventListener
 			if (calibrate) {
 				angleSum += x;
 				angleCount++;
+				
+				if (angleCount > 100) {
+					doneCalibrate();
+				}
 			}
-			
-			
 		}
 		else {
-			gtvX.setText(Float.toString(x));
+			gtvX.setText(Float.toString((float) (x - pitchOffset)));
 			gtvY.setText(Float.toString(y));
 			gtvZ.setText(Float.toString(z));
 			
@@ -105,6 +107,10 @@ public class SensorHandler implements SensorEventListener
 			if (calibrate) {
 				pitchSum += x;
 				pitchCount++;
+				
+				if (pitchCount > 100) {
+					doneCalibrate();
+				}
 			}
 			
 		}
